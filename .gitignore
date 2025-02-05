@@ -6,6 +6,7 @@ build/
 /elasticsearch/data/
 /elasticsearch/logs/
 /var/logs/
+/sample/var/logs/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

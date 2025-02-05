@@ -4,6 +4,10 @@ services:
   sample-app:
     image: sample:0.0.1-SNAPSHOT
     container_name: sample-app
+    volumes:
+      - ./var/logs/myapp:/var/logs/myapp  # 로그 저장 경로 마운트
+    environment:
+      - LOG_PATH=/var/logs/myapp  # 로그 디렉토리 환경 변수 추가
     ports:
       - "8080:8080"
     networks:
