@@ -5,9 +5,13 @@ services:
     image: sample:0.0.1-SNAPSHOT
     container_name: sample-app
     volumes:
-      - ./var/logs/myapp:/var/logs/myapp  # 로그 저장 경로 마운트
+      - ./var/logs/sample:/var/logs/sample  # 로그 저장 경로 마운트
     environment:
-      - LOG_PATH=/var/logs/myapp  # 로그 디렉토리 환경 변수 추가
+      - LOG_PATH=/var/logs/sample  # 로그 디렉토리 환경 변수 추가
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=sample
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=my-app,environment=local
+      - OTEL_TRACES_EXPORTER=otlp
     ports:
       - "8080:8080"
     networks:
@@ -100,11 +104,38 @@ services:
     container_name: filebeat
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - ./var/logs/myapp:/var/logs/myapp:ro
+      - ./var/logs/sample:/var/logs/sample:ro
     depends_on:
       - logstash
     networks:
       - elk
+
+  # tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411 # Zipkin 포맷 지원
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://elasticsearch:9200
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: [ "--config=/etc/otel-collector-config.yml" ]
+    volumes:
+      - ./otel-collector/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+      - "55679:55679"  # zPages
+    depends_on:
+      - jaeger
 
 networks:
   monitoring:
